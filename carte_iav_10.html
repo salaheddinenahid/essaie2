@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Interactive IAV Hassan II - par Salaheddine NAHID</title>
+
+    <link rel="stylesheet" href="leaflet.css" />
+    <script src="leaflet.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #map {
+            height: 100vh; 
+            width: 100%;
+            background-color: #eee; /* Fond gris clair pour voir si la div est là */
+        }
+        .popup-image {
+            width: 250px; height: auto; border-radius: 5px; margin-top: 10px; 
+        }
+        #info-box {
+            position: absolute; top: 20px; right: 20px;         
+            width: 300px; background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px; border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000; pointer-events: auto;
+        }
+        .leaflet-top.leaflet-right {
+            top: 10px; 
+        }
+        #info-box h3 { margin-top: 0; margin-bottom: 10px; color: #333; }
+        #info-box p { margin-bottom: 15px; font-size: 0.95em; color: #555; }
+        
+        #iav-logo {
+            display: block; 
+            margin: 0 auto 15px auto; 
+            max-width: 100px; 
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div id="info-box">
+        <img src="logo_iav.png" alt="Logo IAV Hassan II" id="iav-logo">
+
+        <h3>Salaheddine NAHID</h3>
+        <p>
+            Étudiant en 5ème année, Sciences Géomatiques et Ingénierie Topographique à l'IAV Hassan II.
+        </p>
+    </div>
+
+    <script>
+        
+        // On vérifie d'abord que Leaflet (l'objet 'L') est bien chargé
+        if (typeof L === 'undefined') {
+            alert("ERREUR CRITIQUE : Le fichier 'leaflet.js' n'est pas chargé. Vérifiez qu'il est dans le même dossier que ce fichier HTML.");
+        } else {
+            
+            // Si c'est bon, on crée la carte
+            const map = L.map('map').setView([33.975, -6.867], 17);
+    
+            // --- Fonds de Carte ---
+            // (Note: Ceux-ci ont besoin d'INTERNET pour s'afficher)
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+            const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri'
+            });
+    
+            // On ajoute le fond de carte par défaut
+            osm.addTo(map);
+            
+            // --- Données (Lieux) ---
+            const locations = [
+                { lat: 33.97521789099262, lng: -6.865993174952508, name: "Salle Halieutique", image: "salle halieutique.png" },
+                { lat: 33.97476292328283, lng: -6.867007500230476, name: "Grand Amphi", image: "grand amphi.jpg" },
+                { lat: 33.9753924709791, lng: -6.868666145339099, name: "Club El Harka", image: "club el harka.jpg" },
+                
+                /* ================================================================
+                   CORRECTION IMPORTANTE : J'utilise le nom de la nouvelle image
+                   "département topo.jpg" (sans espace avant .jpg)
+                   ================================================================ */
+                { lat: 33.97655103818508, lng: -6.866943706174709, name: "Département Topo", image: "département topo.jpg" },
+                
+                { lat: 33.97714353248025, lng: -6.866278968563273, name: "Pôle Digital", image: "pole digital.jpg" },
+                { lat: 33.97367310993368, lng: -6.867953996390705, name: "Département Vétérinaire", image: "département véto.jpg" },
+                { lat: 33.97260943952129, lng: -6.869020228123964, name: "Amphi APESA", image: "amphi apesa.jpg" }
+            ];
+            
+            // --- Données (Polygone) ---
+            const iavBoundary = [
+                [33.97081547407958, -6.867463291059138],[33.973068378028536, -6.870677988889042],
+                [33.97470548885106, -6.870559971701119],[33.98163789187141, -6.863974193242255],
+                [33.98088119310198, -6.862807470630206],[33.980732275375495, -6.861440322554321],
+                [33.97669324384529, -6.865554957316128],[33.97584675228155, -6.865522807136961],
+                [33.97463368581199, -6.863810085046714]
+            ];
+    
+            // --- Création des couches (Layers) ---
+            const markerGroup = L.layerGroup();
+            locations.forEach(location => {
+                let popupContent = `<b>${location.name}</b>`; 
+                if (location.image) {
+                    // Le chemin est simple car l'image est dans le MÊME dossier
+                    popupContent += `<br><img src="${location.image}" alt="${location.name}" class="popup-image">`;
+                }
+                L.marker([location.lat, location.lng])
+                    .bindPopup(popupContent, { maxWidth: 260 })
+                    .addTo(markerGroup);
+            });
+    
+            const iavPolygon = L.polygon(iavBoundary, {
+                color: '#c27c00', fillOpacity: 0.3, weight: 2, fillColor: '#f39c12'
+            });
+    
+            // Ajout des couches à la carte
+            markerGroup.addTo(map);
+            iavPolygon.addTo(map);
+    
+            // --- Contrôles ---
+            const baseMaps = {
+                "Plan (Rues)": osm,
+                "Satellite": satellite
+            };
+            const overlayMaps = {
+                "Lieux de l'IAV": markerGroup,
+                "Délimitation IAV": iavPolygon
+            };
+            L.control.layers(baseMaps, overlayMaps, { position: 'topright' }).addTo(map);
+            L.control.scale({ imperial: false, metric: true }).addTo(map);
+        
+        } // Fin du 'if (typeof L !== 'undefined')'
+    </script>
+    
+</body>
+</html>
